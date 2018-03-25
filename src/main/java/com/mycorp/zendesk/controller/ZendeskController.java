@@ -11,12 +11,23 @@ import com.mycorp.zendesk.service.ZendeskService;
 
 import util.datos.UsuarioAlta;
 
+/**
+ * The Class ZendeskController.
+ */
 @RestController
 public class ZendeskController {
 
+	/** The zendesk service. */
 	@Autowired
 	private ZendeskService zendeskService;
 	
+	/**
+	 * Alta ticket.
+	 *
+	 * @param usuarioAlta the usuario alta
+	 * @param userAgent the user agent
+	 * @return the string
+	 */
 	@RequestMapping(value="/ticket", method=RequestMethod.POST)
 	public String altaTicket(
 			@RequestBody UsuarioAlta usuarioAlta, 

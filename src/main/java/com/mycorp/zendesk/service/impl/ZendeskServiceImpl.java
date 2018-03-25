@@ -1,6 +1,5 @@
 package com.mycorp.zendesk.service.impl;
 
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,228 +24,208 @@ import com.mycorp.support.PolizaBasicoFromPolizaBuilder;
 import com.mycorp.support.Ticket;
 import com.mycorp.support.ValueCode;
 import com.mycorp.zendesk.integration.Zendesk;
+import com.mycorp.zendesk.model.mapper.TicketMapper;
 import com.mycorp.zendesk.service.ZendeskService;
 
 import portalclientesweb.ejb.interfaces.PortalClientesWebEJBRemote;
+import util.datos.DetallePoliza;
 import util.datos.PolizaBasico;
 import util.datos.UsuarioAlta;
 
+/**
+ * The Class ZendeskServiceImpl.
+ */
 @Service
 public class ZendeskServiceImpl implements ZendeskService {
 
-    /** The Constant LOG. */
-    private static final Logger LOG = LoggerFactory.getLogger( ZendeskServiceImpl.class );
+	/** The Constant LOG. */
+	private static final Logger LOG = LoggerFactory.getLogger(ZendeskServiceImpl.class);
 
-    private static final String ESCAPED_LINE_SEPARATOR = "\\n";
-    private static final String ESCAPE_ER = "\\";
-    private static final String HTML_BR = "<br/>";
-    
-    @Value("${zendesk.ticket}")
-    public String PETICION_ZENDESK;
+	/** The Constant ESPACIO. */
+	private static final String ESPACIO = " ";
 
-    @Value("${zendesk.token}")
-    public String TOKEN_ZENDESK;
+	/** The Constant ESCAPED_LINE_SEPARATOR. */
+	private static final String ESCAPED_LINE_SEPARATOR = "\\n";
+	/** The Constant ESCAPE_ER. */
+	private static final String ESCAPE_ER = "\\";
+	/** The Constant HTML_BR. */
+	private static final String HTML_BR = "<br/>";
 
-    @Value("${zendesk.url}")
-    public String URL_ZENDESK;
+	/** The token zendesk. */
+	@Value("${zendesk.token}")
+	public String tokenZendesk;
 
-    @Value("${zendesk.user}")
-    public String ZENDESK_USER;
+	/** The url zendesk. */
+	@Value("${zendesk.url}")
+	public String urlZendesk;
 
-    @Value("${tarjetas.getDatos}")
-    public String TARJETAS_GETDATOS;
+	/** The user zendesk. */
+	@Value("${zendesk.user}")
+	public String userZendesk;
 
-    @Value("${cliente.getDatos}")
-    public String CLIENTE_GETDATOS;
+	/** The url get datos tarjetas. */
+	@Value("${tarjetas.getDatos}")
+	public String urlGetDatosTarjetas;
 
-    @Value("${zendesk.error.mail.funcionalidad}")
-    public String ZENDESK_ERROR_MAIL_FUNCIONALIDAD;
+	/** The url gat datos clientes. */
+	@Value("${cliente.getDatos}")
+	public String urlGatDatosClientes;
 
-    @Value("${zendesk.error.destinatario}")
-    public String ZENDESK_ERROR_DESTINATARIO;
+	/** The func erro mail. */
+	@Value("${zendesk.error.mail.funcionalidad}")
+	public String funcErroMail;
 
-    private SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+	/** The email dest error. */
+	@Value("${zendesk.error.destinatario}")
+	public String emailDestError;
 
+	/** The portalclientes web ejb remote. */
+	@Autowired
+	@Qualifier("portalclientesWebEJB")
+	private PortalClientesWebEJBRemote portalclientesWebEJBRemote;
 
-    /** The portalclientes web ejb remote. */
-    @Autowired
-    @Qualifier("portalclientesWebEJB")
-    private PortalClientesWebEJBRemote portalclientesWebEJBRemote;
+	/** The rest template. */
+	@Autowired
+	@Qualifier("restTemplateUTF8")
+	private RestTemplate restTemplate;
 
-    /** The rest template. */
-    @Autowired
-    @Qualifier("restTemplateUTF8")
-    private RestTemplate restTemplate;
+	/** The email service. */
+	@Autowired
+	@Qualifier("emailService")
+	MensajeriaService emailService;
 
-    @Autowired
-    @Qualifier( "emailService" )
-    MensajeriaService emailService;
+	/** The ticket mapper. */
+	@Autowired
+	private TicketMapper ticketMapper;
 
-    /* (non-Javadoc)
-	 * @see com.mycorp.zendesk.service.ZendeskServiceI#altaTicketZendesk(util.datos.UsuarioAlta, java.lang.String)
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see com.mycorp.zendesk.service.ZendeskServiceI#altaTicketZendesk(util.datos.
+	 * UsuarioAlta, java.lang.String)
 	 */
-    @Override
-	public String altaTicketZendesk(UsuarioAlta usuarioAlta, String userAgent){
+	@Override
+	public String altaTicketZendesk(UsuarioAlta usuarioAlta, String userAgent) {
 
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
+		// Instance Data
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.enable(SerializationFeature.INDENT_OUTPUT);
+		String idCliente = null;
+		StringBuilder clientName = new StringBuilder();
+		String detallePoliza = "";
 
-        StringBuilder datosUsuario = new StringBuilder();
-        StringBuilder datosBravo = new StringBuilder();
+		// get idCliente and name
+		if (StringUtils.isNotBlank(usuarioAlta.getNumTarjeta())) {
+			try {
+				ResponseEntity<String> res = getDatosTarjetas(usuarioAlta);
+				if (res.getStatusCode() == HttpStatus.OK) {
+					idCliente = res.getBody();
+					clientName.append(idCliente);
+					detallePoliza = mapper.writeValueAsString(idCliente);
+				}
+			} catch (Exception e) {
+				LOG.error("Error al obtener los datos de la tarjeta", e);
+			}
+		} else if (StringUtils.isNotBlank(usuarioAlta.getNumPoliza())) {
+			try {
+				DetallePoliza detallePolizaResponse = getDatosPoliza(usuarioAlta);
 
-        String idCliente = null;
+				clientName = (new StringBuilder()).append(detallePolizaResponse.getTomador().getNombre())
+						.append(ESPACIO).append(detallePolizaResponse.getTomador().getApellido1()).append(ESPACIO)
+						.append(detallePolizaResponse.getTomador().getApellido2());
 
-        StringBuilder clientName = new StringBuilder();
+				detallePoliza = mapper.writeValueAsString(detallePolizaResponse);
 
+				idCliente = detallePolizaResponse.getTomador().getIdentificador();
+			} catch (Exception e) {
+				LOG.error("Error al obtener los datos de la poliza", e);
+			}
+		}
 
-        // AÃ±ade los datos del formulario
-        if(StringUtils.isNotBlank(usuarioAlta.getNumPoliza())){
-            datosUsuario.append("NÂº de poliza/colectivo: ").append(usuarioAlta.getNumPoliza()).append("/").append(usuarioAlta.getNumDocAcreditativo()).append(ESCAPED_LINE_SEPARATOR);
-        }else{
-            datosUsuario.append("NÂº tarjeta Sanitas o Identificador: ").append(usuarioAlta.getNumTarjeta()).append(ESCAPED_LINE_SEPARATOR);
-        }
-        datosUsuario.append("Tipo documento: ").append(usuarioAlta.getTipoDocAcreditativo()).append(ESCAPED_LINE_SEPARATOR);
-        datosUsuario.append("NÂº documento: ").append(usuarioAlta.getNumDocAcreditativo()).append(ESCAPED_LINE_SEPARATOR);
-        datosUsuario.append("Email personal: ").append(usuarioAlta.getEmail()).append(ESCAPED_LINE_SEPARATOR);
-        datosUsuario.append("NÂº mÃ³vil: ").append(usuarioAlta.getNumeroTelefono()).append(ESCAPED_LINE_SEPARATOR);
-        datosUsuario.append("User Agent: ").append(userAgent).append(ESCAPED_LINE_SEPARATOR);
+		// get client Data
+		DatosCliente cliente = getDatosCliente(idCliente);
 
-        datosBravo.append(ESCAPED_LINE_SEPARATOR + "Datos recuperados de BRAVO:" + ESCAPED_LINE_SEPARATOR + ESCAPED_LINE_SEPARATOR);
-        StringBuilder datosServicio = new StringBuilder();
-        // Obtiene el idCliente de la tarjeta
-        if(StringUtils.isNotBlank(usuarioAlta.getNumTarjeta())){
-            try{
-                String urlToRead = TARJETAS_GETDATOS + usuarioAlta.getNumTarjeta();
-                ResponseEntity<String> res = restTemplate.getForEntity( urlToRead, String.class);
-                if(res.getStatusCode() == HttpStatus.OK){
-                    String dusuario = res.getBody();
-                    clientName.append(dusuario);
-                    idCliente = dusuario;
-                    datosServicio.append("Datos recuperados del servicio de tarjeta:").append(ESCAPED_LINE_SEPARATOR).append(mapper.writeValueAsString(dusuario));
-                }
-            }catch(Exception e)
-            {
-                LOG.error("Error al obtener los datos de la tarjeta", e);
-            }
-        }
-        else if(StringUtils.isNotBlank(usuarioAlta.getNumPoliza())){
-            try
-            {
-                Poliza poliza = new Poliza();
-                poliza.setNumPoliza(Integer.valueOf(usuarioAlta.getNumPoliza()));
-                poliza.setNumColectivo(Integer.valueOf(usuarioAlta.getNumDocAcreditativo()));
-                poliza.setCompania(1);
+		// get Ticket Data and call create Ticket
+		String ticket = ticketMapper.getTicket(usuarioAlta, clientName.toString(), userAgent, detallePoliza, cliente,
+				getTiposDocumentosRegistro());
+		try (Zendesk zendesk = new Zendesk.Builder(urlZendesk).setUsername(userZendesk).setToken(tokenZendesk).build()) {
+			// Ticket
+			Ticket petiZendesk = mapper.readValue(ticket, Ticket.class);
+			zendesk.createTicket(petiZendesk);
 
-                PolizaBasico polizaBasicoConsulta = new PolizaBasicoFromPolizaBuilder().withPoliza( poliza ).build();
+		} catch (Exception e) {
+			LOG.error("Error al crear ticket ZENDESK", e);
+			
+			// If Error send mail
+			CorreoElectronico correo = new CorreoElectronico(Long.parseLong(funcErroMail), "es").addParam(ticketMapper.getDatosUsuario(usuarioAlta, userAgent)
+							.replaceAll(ESCAPE_ER + ESCAPED_LINE_SEPARATOR, HTML_BR))
+					.addParam(ticketMapper.getDatosBravo(cliente, getTiposDocumentosRegistro())
+							.replaceAll(ESCAPE_ER + ESCAPED_LINE_SEPARATOR, HTML_BR));
+			correo.setEmailA(emailDestError);
+			try {
+				emailService.enviar(correo);
+			} catch (Exception ex) {
+				LOG.error("Error al enviar mail", ex);
+			}
 
-                final util.datos.DetallePoliza detallePolizaResponse = portalclientesWebEJBRemote.recuperarDatosPoliza(polizaBasicoConsulta);
+		}
 
-                clientName.append(detallePolizaResponse.getTomador().getNombre()).
-                            append(" ").
-                            append(detallePolizaResponse.getTomador().getApellido1()).
-                            append(" ").
-                            append(detallePolizaResponse.getTomador().getApellido2());
+		return ticketMapper.getDatosUsuario(usuarioAlta, userAgent) + ticketMapper.getDatosBravo(cliente, getTiposDocumentosRegistro());
+	}
 
-                idCliente = detallePolizaResponse.getTomador().getIdentificador();
-                datosServicio.append("Datos recuperados del servicio de tarjeta:").append(ESCAPED_LINE_SEPARATOR).append(mapper.writeValueAsString(detallePolizaResponse));
-            }catch(Exception e)
-            {
-                LOG.error("Error al obtener los datos de la poliza", e);
-            }
-        }
+	/**
+	 * Gets the datos poliza.
+	 *
+	 * @param usuarioAlta the usuario alta
+	 * @return the datos poliza
+	 */
+	private util.datos.DetallePoliza getDatosPoliza(UsuarioAlta usuarioAlta) {
+		Poliza poliza = new Poliza();
+		poliza.setNumPoliza(Integer.valueOf(usuarioAlta.getNumPoliza()));
+		poliza.setNumColectivo(Integer.valueOf(usuarioAlta.getNumDocAcreditativo()));
+		poliza.setCompania(1);
 
-        try
-        {
-            // Obtenemos los datos del cliente
-            DatosCliente cliente = restTemplate.getForObject("http://localhost:8080/test-endpoint", DatosCliente.class, idCliente);
+		PolizaBasico polizaBasicoConsulta = new PolizaBasicoFromPolizaBuilder().withPoliza(poliza).build();
 
-            datosBravo.append("TelÃ©fono: ").append(cliente.getGenTGrupoTmk()).append(ESCAPED_LINE_SEPARATOR);
+		final util.datos.DetallePoliza detallePolizaResponse = portalclientesWebEJBRemote.recuperarDatosPoliza(polizaBasicoConsulta);
+		return detallePolizaResponse;
+	}
 
+	/**
+	 * Gets the datos tarjetas.
+	 *
+	 * @param usuarioAlta the usuario alta
+	 * @return the datos tarjetas
+	 */
+	private ResponseEntity<String> getDatosTarjetas(UsuarioAlta usuarioAlta) {
+		String urlToRead = urlGetDatosTarjetas + usuarioAlta.getNumTarjeta();
+		ResponseEntity<String> res = restTemplate.getForEntity(urlToRead, String.class);
+		return res;
+	}
 
-            datosBravo.append("Feha de nacimiento: ").append(formatter.format(formatter.parse(cliente.getFechaNacimiento()))).append(ESCAPED_LINE_SEPARATOR);
+	/**
+	 * Gets the datos cliente.
+	 *
+	 * @param idCliente the id cliente
+	 * @return the datos cliente
+	 */
+	private DatosCliente getDatosCliente(String idCliente) {
+		DatosCliente cliente = null;
+		try {
+			cliente = restTemplate.getForObject(urlGetDatosTarjetas, DatosCliente.class, idCliente);
+		} catch (Exception e) {
+			LOG.error("Error al obtener los datos en BRAVO del cliente", e);
+		}
+		return cliente;
+	}
 
-            List< ValueCode > tiposDocumentos = getTiposDocumentosRegistro();
-            for(int i = 0; i < tiposDocumentos.size();i++)
-            {
-                if(tiposDocumentos.get(i).getCode().equals(cliente.getGenCTipoDocumento().toString()))
-                {
-                    datosBravo.append("Tipo de documento: ").append(tiposDocumentos.get(i).getValue()).append(ESCAPED_LINE_SEPARATOR);
-                }
-            }
-            datosBravo.append("NÃºmero documento: ").append(cliente.getNumeroDocAcred()).append(ESCAPED_LINE_SEPARATOR);
-
-            datosBravo.append("Tipo cliente: ");
-            switch (cliente.getGenTTipoCliente()) {
-            case 1:
-                datosBravo.append("POTENCIAL").append(ESCAPED_LINE_SEPARATOR);
-                break;
-            case 2:
-                datosBravo.append("REAL").append(ESCAPED_LINE_SEPARATOR);
-                break;
-            case 3:
-                datosBravo.append("PROSPECTO").append(ESCAPED_LINE_SEPARATOR);
-                break;
-            }
-
-            datosBravo.append("ID estado del cliente: ").append(cliente.getGenTStatus()).append(ESCAPED_LINE_SEPARATOR);
-
-            datosBravo.append("ID motivo de alta cliente: ").append(cliente.getIdMotivoAlta()).append(ESCAPED_LINE_SEPARATOR);
-
-            datosBravo.append("Registrado: ").append((cliente.getfInactivoWeb() == null ? "SÃ­" : "No")).append(ESCAPED_LINE_SEPARATOR + ESCAPED_LINE_SEPARATOR);
-
-
-        }catch(Exception e)
-        {
-            LOG.error("Error al obtener los datos en BRAVO del cliente", e);
-        }
-
-        String ticket = String.format(PETICION_ZENDESK, clientName.toString(), usuarioAlta.getEmail(), datosUsuario.toString()+datosBravo.toString()+
-                parseJsonBravo(datosServicio));
-        ticket = ticket.replaceAll("["+ESCAPED_LINE_SEPARATOR+"]", " ");
-
-        try(Zendesk zendesk = new Zendesk.Builder(URL_ZENDESK).setUsername(ZENDESK_USER).setToken(TOKEN_ZENDESK).build()){
-            //Ticket
-            Ticket petiZendesk = mapper.readValue(ticket, Ticket.class);
-            zendesk.createTicket(petiZendesk);
-
-        }catch(Exception e){
-            LOG.error("Error al crear ticket ZENDESK", e);
-            // Send email
-
-            CorreoElectronico correo = new CorreoElectronico( Long.parseLong(ZENDESK_ERROR_MAIL_FUNCIONALIDAD), "es" )
-                    .addParam(datosUsuario.toString().replaceAll(ESCAPE_ER+ESCAPED_LINE_SEPARATOR, HTML_BR))
-                    .addParam(datosBravo.toString().replaceAll(ESCAPE_ER+ESCAPED_LINE_SEPARATOR, HTML_BR));
-            correo.setEmailA( ZENDESK_ERROR_DESTINATARIO );
-            try
-            {
-                emailService.enviar( correo );
-            }catch(Exception ex){
-                LOG.error("Error al enviar mail", ex);
-            }
-
-        }
-
-        datosUsuario.append(datosBravo);
-
-        return datosUsuario.toString();
-    }
-
-    /* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see com.mycorp.zendesk.service.ZendeskServiceI#getTiposDocumentosRegistro()
 	 */
-    @Override
-	public List< ValueCode > getTiposDocumentosRegistro() {
-        return Arrays.asList( new ValueCode(), new ValueCode() ); // simulacion servicio externo
-    }
-
-    /**
-     * MÃ©todo para parsear el JSON de respuesta de los servicios de tarjeta/pÃ³liza
-     *
-     * @param resBravo
-     * @return
-     */
-    private String parseJsonBravo(StringBuilder resBravo)
-    {
-        return resBravo.toString().replaceAll("[\\[\\]\\{\\}\\\"\\r]", "").replaceAll(ESCAPED_LINE_SEPARATOR, ESCAPE_ER + ESCAPED_LINE_SEPARATOR);
-    }
+	@Override
+	public List<ValueCode> getTiposDocumentosRegistro() {
+		return Arrays.asList(new ValueCode(), new ValueCode()); // simulacion servicio externo
+	}
 }
