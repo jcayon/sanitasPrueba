@@ -95,7 +95,7 @@ public class TicketMapper {
 		StringBuilder datosBravo = new StringBuilder();
 		datosBravo.append(ESCAPED_LINE_SEPARATOR).append("Datos recuperados de BRAVO:").append(ESCAPED_LINE_SEPARATOR)
 				.append(ESCAPED_LINE_SEPARATOR);
-		datosBravo.append("TelÃ©fono: ").append(cliente.getGenTGrupoTmk()).append(ESCAPED_LINE_SEPARATOR);
+		datosBravo.append("Teléfono: ").append(cliente.getGenTGrupoTmk()).append(ESCAPED_LINE_SEPARATOR);
 		try {
 			datosBravo.append("Feha de nacimiento: ")
 					.append(formatter.format(formatter.parse(cliente.getFechaNacimiento())))
@@ -104,13 +104,13 @@ public class TicketMapper {
 			throw new ZendeskException(e);
 		}
 
-		for (int i = 0; i < tiposDocumentos.size(); i++) {
-			if (tiposDocumentos.get(i).getCode().equals(cliente.getGenCTipoDocumento().toString())) {
-				datosBravo.append("Tipo de documento: ").append(tiposDocumentos.get(i).getValue())
+		for (ValueCode tipoDoc : tiposDocumentos) {
+			if (tipoDoc.getCode() != null && tipoDoc.getCode().equals(cliente.getGenCTipoDocumento().toString())) {
+				datosBravo.append("Tipo de documento: ").append(tipoDoc.getValue())
 						.append(ESCAPED_LINE_SEPARATOR);
 			}
 		}
-		datosBravo.append("NÃºmero documento: ").append(cliente.getNumeroDocAcred()).append(ESCAPED_LINE_SEPARATOR);
+		datosBravo.append("Número documento: ").append(cliente.getNumeroDocAcred()).append(ESCAPED_LINE_SEPARATOR);
 
 		datosBravo.append("Tipo cliente: ");
 		switch (cliente.getGenTTipoCliente()) {
@@ -130,7 +130,7 @@ public class TicketMapper {
 		datosBravo.append("ID motivo de alta cliente: ").append(cliente.getIdMotivoAlta())
 				.append(ESCAPED_LINE_SEPARATOR);
 
-		datosBravo.append("Registrado: ").append((cliente.getfInactivoWeb() == null ? "SÃ­" : "No"))
+		datosBravo.append("Registrado: ").append((cliente.getfInactivoWeb() == null ? "Sí" : "No"))
 				.append(ESCAPED_LINE_SEPARATOR + ESCAPED_LINE_SEPARATOR);
 
 		return datosBravo.toString();
