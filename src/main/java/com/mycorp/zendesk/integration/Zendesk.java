@@ -1,4 +1,4 @@
-package com.mycorp;
+package com.mycorp.zendesk.integration;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.mycorp.zendesk.exception.ZendeskException;
 import com.mycorp.support.Ticket;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;

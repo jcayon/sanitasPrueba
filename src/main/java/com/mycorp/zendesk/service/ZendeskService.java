@@ -1,4 +1,4 @@
-package com.mycorp;
+package com.mycorp.zendesk.service;
 
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -25,6 +24,7 @@ import com.mycorp.support.Poliza;
 import com.mycorp.support.PolizaBasicoFromPolizaBuilder;
 import com.mycorp.support.Ticket;
 import com.mycorp.support.ValueCode;
+import com.mycorp.zendesk.integration.Zendesk;
 
 import portalclientesweb.ejb.interfaces.PortalClientesWebEJBRemote;
 import util.datos.PolizaBasico;
@@ -39,36 +39,36 @@ public class ZendeskService {
     private static final String ESCAPED_LINE_SEPARATOR = "\\n";
     private static final String ESCAPE_ER = "\\";
     private static final String HTML_BR = "<br/>";
-    @Value("#{envPC['zendesk.ticket']}")
-    public String PETICION_ZENDESK= "";
+    @Value("${zendesk.ticket}")
+    public String PETICION_ZENDESK;
 
-    @Value("#{envPC['zendesk.token']}")
-    public String TOKEN_ZENDESK= "";
+    @Value("${zendesk.token}")
+    public String TOKEN_ZENDESK;
 
-    @Value("#{envPC['zendesk.url']}")
-    public String URL_ZENDESK= "";
+    @Value("${zendesk.url}")
+    public String URL_ZENDESK;
 
-    @Value("#{envPC['zendesk.user']}")
-    public String ZENDESK_USER= "";
+    @Value("${zendesk.user}")
+    public String ZENDESK_USER;
 
-    @Value("#{envPC['tarjetas.getDatos']}")
-    public String TARJETAS_GETDATOS = "";
+    @Value("${tarjetas.getDatos}")
+    public String TARJETAS_GETDATOS;
 
-    @Value("#{envPC['cliente.getDatos']}")
-    public String CLIENTE_GETDATOS = "";
+    @Value("${cliente.getDatos}")
+    public String CLIENTE_GETDATOS;
 
-    @Value("#{envPC['zendesk.error.mail.funcionalidad']}")
-    public String ZENDESK_ERROR_MAIL_FUNCIONALIDAD = "";
+    @Value("${zendesk.error.mail.funcionalidad}")
+    public String ZENDESK_ERROR_MAIL_FUNCIONALIDAD;
 
-    @Value("#{envPC['zendesk.error.destinatario']}")
-    public String ZENDESK_ERROR_DESTINATARIO = "";
+    @Value("${zendesk.error.destinatario}")
+    public String ZENDESK_ERROR_DESTINATARIO;
 
     private SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
 
 
     /** The portalclientes web ejb remote. */
     @Autowired
-    // @Qualifier("portalclientesWebEJB")
+    @Qualifier("portalclientesWebEJB")
     private PortalClientesWebEJBRemote portalclientesWebEJBRemote;
 
     /** The rest template. */
