@@ -187,8 +187,7 @@ public class ZendeskServiceImpl implements ZendeskService {
 
 		PolizaBasico polizaBasicoConsulta = new PolizaBasicoFromPolizaBuilder().withPoliza(poliza).build();
 
-		final util.datos.DetallePoliza detallePolizaResponse = portalclientesWebEJBRemote.recuperarDatosPoliza(polizaBasicoConsulta);
-		return detallePolizaResponse;
+		return portalclientesWebEJBRemote.recuperarDatosPoliza(polizaBasicoConsulta);
 	}
 
 	/**
@@ -199,8 +198,7 @@ public class ZendeskServiceImpl implements ZendeskService {
 	 */
 	private ResponseEntity<String> getDatosTarjetas(UsuarioAlta usuarioAlta) {
 		String urlToRead = urlGetDatosTarjetas + usuarioAlta.getNumTarjeta();
-		ResponseEntity<String> res = restTemplate.getForEntity(urlToRead, String.class);
-		return res;
+		return restTemplate.getForEntity(urlToRead, String.class);
 	}
 
 	/**
