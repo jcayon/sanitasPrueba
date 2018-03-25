@@ -26,4 +26,8 @@ He seguido los siguientes pasos:
 		-	EmailService -> Me creo la implementación del componente de email. Vacia por ahora.
 	-	Levanta correctamente la aplicación
 	
-	-	Me creo un metodo en el controller que llame al ZendeskService y aprovecho para poner swagger
+	-	Me creo un metodo en el controller que llame al ZendeskService.altaTicketZendesk siguiendo restful (URL: ticket Method: POST) y aprovecho para poner swagger
+	
+	- 	Añado modificaciones/mejoras en ZendeskService de cara a refactorizar
+		-	Creo interfaz
+		-	Paso la generación de los datos del ticket a un mapper
