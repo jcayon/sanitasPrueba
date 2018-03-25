@@ -15,11 +15,11 @@ import org.springframework.web.client.RestTemplate;
 @ComponentScan({"com.mycorp"})
 public class ZendeskApplication {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
         SpringApplication.run(ZendeskApplication.class, args);
     }
 
-    // Creamos el bean del rest Template señalando que es UTF-8
+    // RestTemplate Bean using UTF-8 chatset
     @Bean(name = "restTemplateUTF8")
     public RestTemplate getRestClient() {
         RestTemplate restTemplate = new RestTemplate(
