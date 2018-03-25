@@ -23,7 +23,7 @@ import com.mycorp.support.Poliza;
 import com.mycorp.support.PolizaBasicoFromPolizaBuilder;
 import com.mycorp.support.Ticket;
 import com.mycorp.support.ValueCode;
-import com.mycorp.zendesk.integration.Zendesk;
+import com.mycorp.zendesk.integration.zendesk.Zendesk;
 import com.mycorp.zendesk.model.mapper.TicketMapper;
 import com.mycorp.zendesk.service.ZendeskService;
 

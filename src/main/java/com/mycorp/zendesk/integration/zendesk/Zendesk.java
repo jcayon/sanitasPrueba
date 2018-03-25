@@ -1,4 +1,4 @@
-package com.mycorp.zendesk.integration;
+package com.mycorp.zendesk.integration.zendesk;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -15,9 +15,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.mycorp.zendesk.exception.ZendeskException;
 import com.mycorp.support.Ticket;
-import com.ning.http.client.AsyncCompletionHandler;
+import com.mycorp.zendesk.exception.ZendeskException;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.ListenableFuture;
 import com.ning.http.client.Realm;
@@ -169,19 +168,6 @@ public class Zendesk implements Closeable {
         }
     }
 
-
-    private static abstract class ZendeskAsyncCompletionHandler<T> extends AsyncCompletionHandler<T> {
-        @Override
-        public void onThrowable(Throwable t) {
-            if (t instanceof IOException) {
-                throw new ZendeskException(t);
-            } else {
-                super.onThrowable(t);
-            }
-        }
-    }
-
-
     //////////////////////////////////////////////////////////////////////
     // Closeable interface methods
     //////////////////////////////////////////////////////////////////////
@@ -217,10 +203,10 @@ public class Zendesk implements Closeable {
     public static class Builder {
         private AsyncHttpClient client = null;
         private final String url;
-        private String username = null;
-        private String password = null;
-        private String token = null;
-        private String oauthToken = null;
+        private String username = "";
+        private String password = "";
+        private String token = "";
+        private String oauthToken = "";
 
         public Builder(String url) {
             this.url = url;
